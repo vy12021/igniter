@@ -441,6 +441,13 @@ public class ServerListFragment extends BaseFragment implements ServerListContra
             @Override
             public void run() {
                 mServerListAdapter.replaceData(configs);
+                
+                // 添加调试日志，显示加载的测试结果
+                android.util.Log.d(TAG, "Server list loaded with " + configs.size() + " servers");
+                for (TrojanConfig config : configs) {
+                    String testResult = config.getFormattedTestResult();
+                    android.util.Log.d(TAG, "Server " + config.getIdentifier() + " test result: " + testResult);
+                }
             }
         });
     }

@@ -12,15 +12,21 @@ public class ProxyInitializer extends Initializer {
 
     @Override
     public void init(Context context) {
-        Globals.Init(context);
-        TrojanConfig cacheConfig = TrojanHelper.readTrojanConfig(Globals.getTrojanConfigPath());
-        if (cacheConfig == null) {
-            LogHelper.e(TAG, "read null trojan config");
-        } else {
-            Globals.setTrojanConfigInstance(cacheConfig);
-        }
-        if (!Globals.getTrojanConfigInstance().isValidRunningConfig()) {
-            LogHelper.e(TAG, "Invalid trojan config!");
+        try {
+            LogHelper.i(TAG, "Initializing proxy process");
+            Globals.Init(context);
+            TrojanConfig cacheConfig = TrojanHelper.readTrojanConfig(Globals.getTrojanConfigPath());
+            if (cacheConfig == null) {
+                LogHelper.e(TAG, "read null trojan config");
+            } else {
+                Globals.setTrojanConfigInstance(cacheConfig);
+            }
+            if (!Globals.getTrojanConfigInstance().isValidRunningConfig()) {
+                LogHelper.e(TAG, "Invalid trojan config!");
+            }
+            LogHelper.i(TAG, "Proxy process initialized successfully");
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to initialize proxy process: " + e.getMessage());
         }
     }
 

@@ -32,6 +32,7 @@
     <string name="invalid_configuration">Invalid Configuration</string>
     <string name="notification_channel_id" translatable="false">igniter_notify_chan</string>
     <string name="notification_channel_name">Igniter notifications</string>
+    <string name="notification_channel_description">Notifications for VPN service status and connection information</string>
     <string name="notification_starting_service">Starting service</string>
     <string name="notification_listen_port">listening on port: %1$s</string>
     <string name="main_restart_proxy_service_tip">Restart proxy yourself to apply new exempt apps configuration.</string>
@@ -47,6 +48,30 @@
     <string name="subscribe_servers_success">Subscribe success</string>
     <string name="subscribe_servers_failed">Subscribe failed. Please check your subscribe setting or try to subscribe after starting proxy. It also might be caused by format inconsistence.</string>
     <string name="server_list_subscribe_hint">Subscribe link</string>
+
+    <!-- Auto Mode -->
+    <string name="auto_mode">Auto Mode</string>
+    <string name="current_server">Current Server</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connecting">Connecting</string>
+    <string name="connection_failed">Connection Failed</string>
+    <string name="disconnecting">Disconnecting</string>
+    <string name="auto_switching">Auto Switching</string>
+    <string name="no_available_server">No Available Server</string>
+    <string name="server_switched">Switched to %s</string>
+    <string name="retrying_connection" formatted="false">Retrying connection (%d/%d)</string>
+    <string name="no_server_selected">No server selected</string>
+    <string name="connection_failed_text">Connection failed</string>
+    <string name="not_tested">Not tested</string>
+    <string name="testing">Testing...</string>
+    <string name="result_expired">Result expired</string>
+    <string name="connection_good">Good connection</string>
+    <string name="connection_normal">Normal connection</string>
+    <string name="connection_slow">Slow connection</string>
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%d min ago</string>
+    <string name="hours_ago">%d hr ago</string>
     <string name="action_server_list_enter_batch_mode">Batch…</string>
     <string name="action_server_list_select_all">Select all</string>
     <string name="action_server_list_deselect_all">Deselect all</string>

@@ -182,7 +182,14 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
         LogHelper.i(TAG, "onCreate");
         IntentFilter filter = new IntentFilter();
         filter.addAction(getString(R.string.stop_service));
-        registerReceiver(mStopBroadcastReceiver, filter);
+        
+        // Register receiver with proper flags for Android 14+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerReceiver(mStopBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(mStopBroadcastReceiver, filter);
+        }
+        LogHelper.i(TAG, "BroadcastReceiver registered successfully");
     }
 
     @Override
@@ -222,6 +229,28 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
             }
         }
         mCallbackList.finishBroadcast();
+        
+        // 通知自动模式管理器状态变化
+        notifyAutoModeManager(state);
+    }
+    
+    /**
+     * 通知自动模式管理器状态变化
+     */
+    private void notifyAutoModeManager(int state) {
+        try {
+            AutoModeManager autoModeManager = AutoModeManager.getInstance();
+            if (autoModeManager.isAutoModeEnabled()) {
+                if (state == STARTED) {
+                    autoModeManager.reportConnectionSuccess();
+                } else if (state == STOPPED) {
+                    // 连接失败或断开
+                    autoModeManager.reportConnectionFailure();
+                }
+            }
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Error notifying AutoModeManager: " + e.getMessage());
+        }
     }
 
     @Override
@@ -271,28 +300,42 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
      * invoke {@link android.app.Service#startForeground(int, Notification)} within 5 seconds.
      */
     private void startForegroundNotification(String channelId) {
+        // Create notification channel first
+        createNotificationChannel(channelId);
+        
         Intent openMainActivityIntent = new Intent(this, MainActivity.class);
         openMainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingOpenMainActivityIntent = PendingIntent.getActivity(this, 0, openMainActivityIntent, PendingIntent.FLAG_IMMUTABLE);
+        
+        int flags = PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        }
+        PendingIntent pendingOpenMainActivityIntent = PendingIntent.getActivity(this, 0, openMainActivityIntent, flags);
+        
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.drawable.ic_tile)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.notification_starting_service))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                // Set the intent that will fire when the user taps the notification
                 .setContentIntent(pendingOpenMainActivityIntent)
                 .setAutoCancel(false)
-                .setOngoing(true);
+                .setOngoing(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
+                
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             builder.setShowWhen(true);
         }
-        builder.setWhen(0L);
+        builder.setWhen(System.currentTimeMillis());
 
-        // it's required to create a notification channel before startForeground on SDK >= Android O
-        createNotificationChannel(channelId);
-        LogHelper.i(TAG, "start foreground notification");
-        startForeground(IGNITER_STATUS_NOTIFY_MSG_ID, builder.build());
+        LogHelper.i(TAG, "Starting foreground notification");
+        try {
+            startForeground(IGNITER_STATUS_NOTIFY_MSG_ID, builder.build());
+            LogHelper.i(TAG, "Foreground notification started successfully");
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to start foreground notification: " + e.getMessage());
+        }
     }
 
     private boolean readClashPreference() {
@@ -420,11 +463,20 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
             b.addDnsServer("2001:4860:4860::8888");
             b.addDnsServer("2001:4860:4860::8844");
         }
-        pfd = b.establish();
-        LogHelper.i("VPN", "pfd established");
+        try {
+            pfd = b.establish();
+            LogHelper.i(TAG, "VPN pfd established successfully");
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to establish VPN: " + e.getMessage());
+            setState(STOPPED);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
         if (pfd == null) {
-            stop();
+            LogHelper.e(TAG, "VPN pfd is null, stopping service");
+            setState(STOPPED);
+            stopSelf();
             return START_NOT_STICKY;
         }
         int fd = pfd.getFd();
@@ -471,11 +523,27 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
             }
         }
 
-        LogHelper.i("Igniter", "trojan port is " + trojanPort);
+        LogHelper.i(TAG, "trojan port is " + trojanPort);
         TrojanHelper.ChangeListenPort(Globals.getTrojanConfigPath(), trojanPort);
         TrojanHelper.ShowConfig(Globals.getTrojanConfigPath());
 
-        JNIHelper.trojan(Globals.getTrojanConfigPath());
+        try {
+            if (!JNIHelper.isLibraryLoaded()) {
+                LogHelper.e(TAG, "Native library not loaded, cannot start trojan");
+                setState(STOPPED);
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+            
+            LogHelper.i(TAG, "Starting trojan with config: " + Globals.getTrojanConfigPath());
+            JNIHelper.trojan(Globals.getTrojanConfigPath());
+            LogHelper.i(TAG, "Trojan started successfully");
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to start trojan: " + e.getMessage());
+            setState(STOPPED);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
         if (enable_clash) {
             try {
@@ -529,28 +597,20 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
             // Disable go-tun2socks fake ip
             tun2socksStartOptions.setFakeIPRange("");
         }
-        LogHelper.i(TAG, tun2socksStartOptions.toString());
-        Tun2socks.start(tun2socksStartOptions);
+        LogHelper.i(TAG, "Starting tun2socks with options: " + tun2socksStartOptions.toString());
+        try {
+            Tun2socks.start(tun2socksStartOptions);
+            LogHelper.i(TAG, "Tun2socks started successfully");
+            setState(STARTED);
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to start tun2socks: " + e.getMessage());
+            setState(STOPPED);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
-        setState(STARTED);
-
-        Intent openMainActivityIntent = new Intent(this, MainActivity.class);
-        openMainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingOpenMainActivityIntent = PendingIntent.getActivity(this, 0, openMainActivityIntent, PendingIntent.FLAG_IMMUTABLE);
-        String igniterRunningStatusStr = getString(R.string.notification_listen_port, String.valueOf(tun2socksPort));
-        final String channelId = getString(R.string.notification_channel_id);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.drawable.ic_tile)
-                .setContentTitle("Igniter Active")
-                .setContentText(igniterRunningStatusStr)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(igniterRunningStatusStr))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                // Set the intent that will fire when the user taps the notification
-                .setContentIntent(pendingOpenMainActivityIntent)
-                .setAutoCancel(false)
-                .setOngoing(true);
-        startForeground(IGNITER_STATUS_NOTIFY_MSG_ID, builder.build());
+        // Update notification to show service is running
+        updateRunningNotification();
         return START_STICKY;
     }
 
@@ -576,16 +636,67 @@ public class ProxyService extends VpnService implements TestConnection.OnResultL
         stopSelf();
 
         setState(STOPPED);
-        stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
         destroyNotificationChannel(getString(R.string.notification_channel_id));
     }
 
     private void createNotificationChannel(String channelId) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            
+            // Check if channel already exists
+            if (notificationManager.getNotificationChannel(channelId) != null) {
+                return;
+            }
+            
             NotificationChannel channel = new NotificationChannel(channelId,
                     getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription(getString(R.string.notification_channel_description));
+            channel.setShowBadge(true);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            channel.enableVibration(false);
+            channel.enableLights(false);
+            
             notificationManager.createNotificationChannel(channel);
+            LogHelper.i(TAG, "Notification channel created: " + channelId);
+        }
+    }
+
+    private void updateRunningNotification() {
+        Intent openMainActivityIntent = new Intent(this, MainActivity.class);
+        openMainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        
+        int flags = PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        }
+        PendingIntent pendingOpenMainActivityIntent = PendingIntent.getActivity(this, 0, openMainActivityIntent, flags);
+        
+        String igniterRunningStatusStr = getString(R.string.notification_listen_port, String.valueOf(tun2socksPort));
+        final String channelId = getString(R.string.notification_channel_id);
+        
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_tile)
+                .setContentTitle("Igniter Active")
+                .setContentText(igniterRunningStatusStr)
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText(igniterRunningStatusStr))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingOpenMainActivityIntent)
+                .setAutoCancel(false)
+                .setOngoing(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
+                
+        try {
+            startForeground(IGNITER_STATUS_NOTIFY_MSG_ID, builder.build());
+            LogHelper.i(TAG, "Running notification updated successfully");
+        } catch (Exception e) {
+            LogHelper.e(TAG, "Failed to update running notification: " + e.getMessage());
         }
     }
 

@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import io.github.trojan_gfw.igniter.LogHelper;
 import io.github.trojan_gfw.igniter.R;
+import io.github.trojan_gfw.igniter.TestResultManager;
 import io.github.trojan_gfw.igniter.TrojanConfig;
 import io.github.trojan_gfw.igniter.servers.ItemVerticalMoveCallback;
 import io.github.trojan_gfw.igniter.servers.data.TrojanConfigWrapper;
@@ -84,6 +86,7 @@ public class ServerListAdapter extends RecyclerView.Adapter<ViewHolder> implemen
             mData.add(new TrojanConfigWrapper(config));
         }
         sortConfigByDelayTime();
+        notifyDataSetChanged(); // 通知RecyclerView更新UI
     }
 
     public void setPingServerDelayTime(TrojanConfig tagetConfig, float timeout) {
@@ -91,6 +94,20 @@ public class ServerListAdapter extends RecyclerView.Adapter<ViewHolder> implemen
         for (TrojanConfigWrapper configWrapper : mData) {
             if (tagetConfig.equals(configWrapper.getDelegate())) {
                 configWrapper.setPingDelayTime(timeout);
+                
+                // 同时保存测试结果到TestResultManager
+                boolean connected = timeout != ServerListDataManager.SERVER_UNABLE_TO_REACH;
+                String error = connected ? "" : "Connection failed";
+                TestResultManager.getInstance().saveTestResult(
+                    tagetConfig.getIdentifier(), 
+                    connected, 
+                    connected ? (long)timeout : 0, 
+                    error
+                );
+                
+                LogHelper.d(TAG, "Saved ping result for " + tagetConfig.getIdentifier() + 
+                           ": " + (connected ? timeout + "ms" : "failed"));
+                
                 sortConfigByDelayTime();
                 break;
             }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="io.github.trojan_gfw.igniter"
     android:installLocation="internalOnly">
 
     <uses-feature android:name="android.hardware.camera.any" />
@@ -15,11 +14,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- Required for notifications on Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".IgniterApplication"
         android:allowBackup="true"
-        android:extractNativeLibs="true"
         android:fullBackupContent="true"
         android:fullBackupOnly="true"
         android:icon="@mipmap/ic_launcher"

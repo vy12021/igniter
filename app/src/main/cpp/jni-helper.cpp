@@ -23,7 +23,11 @@ static void startTrojan(const string &config)
 
 
 extern "C" {
-    JNIEXPORT void JNICALL Java_io_github_trojan_1gfw_igniter_JNIHelper_trojan(JNIEnv *env, jclass, jstring config) {
+    JNIEXPORT jstring JNICALL Java_io_github_trojan_1gfw_igniter_JNIHelper_testNative(JNIEnv *env, jclass) {
+        return env->NewStringUTF("Native library working correctly");
+    }
+
+    JNIEXPORT void JNICALL Java_io_github_trojan_1gfw_igniter_JNIHelper_trojanNative(JNIEnv *env, jclass, jstring config) {
         if (trojanThread != nullptr)
             return;
         const char *s = env->GetStringUTFChars(config, 0);
@@ -33,7 +37,7 @@ extern "C" {
     }
 
 
-    JNIEXPORT void JNICALL Java_io_github_trojan_1gfw_igniter_JNIHelper_stop(JNIEnv *env, jclass) {
+    JNIEXPORT void JNICALL Java_io_github_trojan_1gfw_igniter_JNIHelper_stopNative(JNIEnv *env, jclass) {
 
         if (trojanThread != nullptr) {
             trojanService->stop();

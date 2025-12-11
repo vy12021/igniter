@@ -2,6 +2,8 @@ package io.github.trojan_gfw.igniter.servers.data;
 
 import androidx.annotation.Nullable;
 
+import io.github.trojan_gfw.igniter.TestResult;
+import io.github.trojan_gfw.igniter.TestResultManager;
 import io.github.trojan_gfw.igniter.TrojanConfig;
 import io.github.trojan_gfw.igniter.servers.data.ServerListDataManager;
 
@@ -12,6 +14,45 @@ public class TrojanConfigWrapper extends TrojanConfig {
 
     public TrojanConfigWrapper(TrojanConfig delegate) {
         mDelegate = delegate;
+        // 自动加载之前保存的测试结果
+        loadTestResult();
+    }
+
+    /**
+     * 从TestResultManager加载测试结果
+     */
+    private void loadTestResult() {
+        try {
+            String serverId = mDelegate.getIdentifier();
+            TestResult testResult = TestResultManager.getInstance().getTestResult(serverId);
+            
+            android.util.Log.d("TrojanConfigWrapper", "Loading test result for " + serverId);
+            
+            if (testResult != null) {
+                android.util.Log.d("TrojanConfigWrapper", "Found test result: connected=" + 
+                                 testResult.isConnected() + ", delay=" + testResult.getDelay() + 
+                                 "ms, valid=" + testResult.isValid());
+                
+                if (testResult.isValid()) {
+                    // 如果有有效的测试结果，设置延迟时间
+                    if (testResult.isConnected()) {
+                        mPingDelayTime = (float) testResult.getDelay(); // 将long转换为float
+                        android.util.Log.d("TrojanConfigWrapper", "Set ping delay to " + mPingDelayTime + "ms");
+                    } else {
+                        mPingDelayTime = ServerListDataManager.SERVER_UNABLE_TO_REACH;
+                        android.util.Log.d("TrojanConfigWrapper", "Set ping delay to UNABLE_TO_REACH");
+                    }
+                } else {
+                    android.util.Log.d("TrojanConfigWrapper", "Test result is not valid (expired)");
+                }
+            } else {
+                android.util.Log.d("TrojanConfigWrapper", "No test result found for " + serverId);
+            }
+        } catch (Exception e) {
+            // 如果加载失败，保持默认值
+            android.util.Log.e("TrojanConfigWrapper", "Failed to load test result: " + e.getMessage());
+            mPingDelayTime = ServerListDataManager.SERVER_STATUS_INIT;
+        }
     }
 
     public TrojanConfig getDelegate() {
@@ -172,5 +213,12 @@ public class TrojanConfigWrapper extends TrojanConfig {
 
     public void setPingDelayTime(float pingDelayTime) {
         this.mPingDelayTime = pingDelayTime;
+    }
+
+    /**
+     * 刷新测试结果（从TestResultManager重新加载）
+     */
+    public void refreshTestResult() {
+        loadTestResult();
     }
 }

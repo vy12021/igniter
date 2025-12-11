@@ -261,6 +261,36 @@ public class TrojanConfig implements Parcelable {
         return this;
     }
 
+    /**
+     * 获取格式化的测试结果（从TestResultManager读取）
+     * @deprecated Use getFormattedTestResult(Context) for internationalization
+     */
+    @Deprecated
+    public String getFormattedTestResult() {
+        return TestResultManager.getInstance().getFormattedTestResult(getIdentifier());
+    }
+    
+    /**
+     * 获取格式化的测试结果（从TestResultManager读取，国际化版本）
+     */
+    public String getFormattedTestResult(android.content.Context context) {
+        return TestResultManager.getInstance().getFormattedTestResult(getIdentifier(), context);
+    }
+
+    /**
+     * 检查是否有有效的测试结果（从TestResultManager读取）
+     */
+    public boolean hasValidTestResult() {
+        return TestResultManager.getInstance().hasValidTestResult(getIdentifier());
+    }
+
+    /**
+     * 获取测试结果对象（从TestResultManager读取）
+     */
+    public TestResult getTestResult() {
+        return TestResultManager.getInstance().getTestResult(getIdentifier());
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (!(obj instanceof TrojanConfig)) {

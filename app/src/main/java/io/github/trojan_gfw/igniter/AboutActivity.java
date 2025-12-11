@@ -4,10 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceFragmentCompat;
 
-public class AboutActivity extends AppCompatActivity {
+import io.github.trojan_gfw.igniter.common.app.BaseAppCompatActivity;
+
+public class AboutActivity extends BaseAppCompatActivity {
 
     public static Intent create(Context context) {
         return new Intent(context, AboutActivity.class);

@@ -62,7 +62,7 @@ public abstract class PreferenceUtils {
     private static <T> T getPreference(ContentResolver resolver, Uri uri, String key, T defVal,
                                        CursorReader<T> reader) {
         try (Cursor query = ContentResolverCompat.query(resolver, uri, new String[]{key}, null,
-                null, null, null)) {
+                null, null, (androidx.core.os.CancellationSignal) null)) {
             if (query == null) return defVal;
             if (query.moveToFirst()) {
                 int columnIndex = query.getColumnIndex(key);

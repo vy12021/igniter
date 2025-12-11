@@ -37,6 +37,14 @@
     <!-- App Bar Menu -->
     <string name="action_test_connection">测试连接</string>
     <string name="action_show_develop_info_logcat">在logcat中显示开发信息</string>
+    
+    <string name="action_subscribe_server_list">订阅更新</string>
+    <string name="action_subscribe_settings">订阅设置</string>
+    <string name="subscribe_servers_success">订阅成功</string>
+    <string name="subscribe_servers_failed">订阅失败，请检查订阅设置或者尝试开启代理后再更新，也可能是Igniter不支持该订阅信息的格式</string>
+    <string name="server_list_subscribe_hint">订阅链接</string>
+    
+    <string name="notification_channel_description">VPN服务状态和连接信息通知</string>
 
     <string name="server_list_import_file_desc">导入配置文件</string>
     <string name="server_list_file_chooser_msg">选择文本文件</string>
@@ -105,11 +113,6 @@
     <string name="batch_delete_server_list_success">删除成功</string>
     <string name="action_server_list_enter_batch_mode">批量…</string>
     <string name="action_server_list_deselect_all">全不选</string>
-    <string name="server_list_subscribe_hint">订阅链接</string>
-    <string name="action_subscribe_settings">订阅设置</string>
-    <string name="action_subscribe_server_list">订阅更新</string>
-    <string name="subscribe_servers_success">更新成功</string>
-    <string name="subscribe_servers_failed">更新失败，请检查订阅设置或者尝试开启代理后再更新，也可能是Igniter不支持该订阅信息的格式</string>
     <string name="common_exit">退出</string>
     <string name="scan_qr_code_failed_to_pick_photo">无法获取图片</string>
     <string name="scan_qr_code_from_camera">开相机扫描二维码</string>
@@ -126,4 +129,29 @@
     <string name="settings_fixed_port">固定端口</string>
     <string name="settings_port_help_text">端口范围:49152~65535,使用随机端口的话不需要填数字</string>
     <string name="settings_fixed_port_usage">仅当允许局域网访问时生效\n范围:49152~65535,使用随机端口的话不需要填数字</string>
+    
+    <!-- Auto Mode -->
+    <string name="auto_mode">自动模式</string>
+    <string name="current_server">当前服务器</string>
+    <string name="connected">已连接</string>
+    <string name="disconnected">未连接</string>
+    <string name="connecting">连接中</string>
+    <string name="connection_failed">连接失败</string>
+    <string name="disconnecting">断开中</string>
+    <string name="auto_switching">自动切换中</string>
+    <string name="no_available_server">没有可用服务器</string>
+    <string name="server_switched">已切换到 %s</string>
+    <string name="retrying_connection" formatted="false">重试连接中 (%d/%d)</string>
+    
+    <string name="no_server_selected">未选择服务器</string>
+    <string name="connection_failed_text">连接失败</string>
+    <string name="not_tested">未测试</string>
+    <string name="testing">测试中...</string>
+    <string name="result_expired">结果过期</string>
+    <string name="connection_good">连接良好</string>
+    <string name="connection_normal">连接正常</string>
+    <string name="connection_slow">连接较慢</string>
+    <string name="just_now">刚刚</string>
+    <string name="minutes_ago">%d分钟前</string>
+    <string name="hours_ago">%d小时前</string>
 </resources>
